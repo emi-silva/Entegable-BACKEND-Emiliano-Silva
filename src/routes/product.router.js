@@ -58,6 +58,8 @@ router.post('/', async (req, res) => {
       category,
       thumbnails: thumbnails ?? []
     });
+    const io = req.app.get('io');
+    io.emit('products', await manager.getProducts());
     res.status(201).json(newProduct);
   } catch (error) {
     res.status(500).json({ error: 'Error al agregar el producto', detail: error.message });
@@ -93,6 +95,8 @@ router.delete('/:pid', async (req, res) => {
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
 
     await manager.deleteProduct(pid);
+    const io = req.app.get('io');
+    io.emit('products', await manager.getProducts());
     res.json({ status: 'Producto eliminado correctamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar el producto', detail: error.message });

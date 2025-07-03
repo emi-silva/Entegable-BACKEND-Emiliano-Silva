@@ -1,13 +1,24 @@
 const express = require('express');
+const path = require('path');
+const { engine } = require('express-handlebars');
+
 const cartsRouter = require('./src/routes/carts.router.js');
+const productRouter = require('./src/routes/product.router.js');
 
 const app = express();
 
-// Middleware para parsear JSON
 app.use(express.json());
 
-// Rutas
-app.use('/api/carts', cartsRouter);
+// Configuración de Handlebars
+app.engine('handlebars', engine());
+app.set('view engine', 'handlebars');
+app.set('views', path.join(__dirname, 'src', 'views'));
 
-// Exportación para que server.js lo levante
+// Rutas API
+app.use('/api/carts', cartsRouter);
+app.use('/api/products', productRouter);
+
+// Ruta para la vista realtimeproducts
+app.use('/', require('./src/routes/views.router.js'));
+
 module.exports = app;

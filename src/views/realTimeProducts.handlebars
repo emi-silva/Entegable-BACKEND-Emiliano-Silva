@@ -1,0 +1,23 @@
+<!-- filepath: c:\Users\emili\Desktop\ENTREGABLE BACK - EMILIANO SILVA\src\views\realTimeProducts.handlebars -->
+<h1>Productos en tiempo real</h1>
+<ul id="product-list">
+  {{#each products}}
+    <li>
+      <strong>{{title}}</strong> - {{description}}<br>
+      Precio: ${{price}} | Stock: {{stock}}
+    </li>
+  {{/each}}
+</ul>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  socket.on('products', products => {
+    const list = document.getElementById('product-list');
+    list.innerHTML = '';
+    products.forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${p.title}</strong> - ${p.description}<br>Precio: $${p.price} | Stock: ${p.stock}`;
+      list.appendChild(li);
+    });
+  });
+</script>

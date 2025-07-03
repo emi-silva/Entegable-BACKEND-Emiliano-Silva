@@ -1,7 +1,7 @@
-const fs = require('fs/promises');
 const path = require('path');
+const fs = require('fs/promises');
 
-const filePath = path.resolve('data/products.json');
+const filePath = path.resolve(__dirname, '../../data/products.json');
 
 class ProductManager {
   constructor() {
@@ -10,10 +10,12 @@ class ProductManager {
 
   async getProducts() {
     try {
+      console.log('Intentando leer:', this.path);
       const data = await fs.readFile(this.path, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
       console.warn(`No se pudo leer archivo ${this.path}, retornando array vacío.`);
+      console.error(error); // <--- Agrega esto para ver el error real
       return [];
     }
   }

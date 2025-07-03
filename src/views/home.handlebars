@@ -1,0 +1,10 @@
+<!-- filepath: c:\Users\emili\Desktop\ENTREGABLE BACK - EMILIANO SILVA\src\views\home.handlebars -->
+<h1>Lista de productos</h1>
+<ul>
+  {{#each products}}
+    <li>
+      <strong>{{title}}</strong> - {{description}}<br>
+      Precio: ${{price}} | Stock: {{stock}}
+    </li>
+  {{/each}}
+</ul>
