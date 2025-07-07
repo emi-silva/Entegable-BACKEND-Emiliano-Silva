@@ -1,23 +1,65 @@
-<!-- filepath: c:\Users\emili\Desktop\ENTREGABLE BACK - EMILIANO SILVA\src\views\realTimeProducts.handlebars -->
 <h1>Productos en tiempo real</h1>
+
+<form id="add-form">
+  <input name="title" placeholder="Título" required>
+  <input name="description" placeholder="Descripción" required>
+  <input name="code" placeholder="Código" required>
+  <input name="price" type="number" placeholder="Precio" required>
+  <input name="stock" type="number" placeholder="Stock" required>
+  <input name="category" placeholder="Categoría" required>
+  <button type="submit">Agregar producto</button>
+</form>
+
+<form id="delete-form" style="margin-top:10px;">
+  <input name="id" type="number" placeholder="ID a eliminar" required>
+  <button type="submit">Eliminar producto</button>
+</form>
+
 <ul id="product-list">
   {{#each products}}
     <li>
       <strong>{{title}}</strong> - {{description}}<br>
-      Precio: ${{price}} | Stock: {{stock}}
+      Precio: ${{price}} | Stock: {{stock}} | ID: {{id}}
     </li>
   {{/each}}
 </ul>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
+
+  // Actualiza la lista en tiempo real
   socket.on('products', products => {
     const list = document.getElementById('product-list');
     list.innerHTML = '';
     products.forEach(p => {
       const li = document.createElement('li');
-      li.innerHTML = `<strong>${p.title}</strong> - ${p.description}<br>Precio: $${p.price} | Stock: ${p.stock}`;
+      li.innerHTML = `<strong>${p.title}</strong> - ${p.description}<br>Precio: $${p.price} | Stock: ${p.stock} | ID: ${p.id}`;
       list.appendChild(li);
     });
+  });
+
+  // Alta producto
+  document.getElementById('add-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+      title: form.title.value,
+      description: form.description.value,
+      code: form.code.value,
+      price: Number(form.price.value),
+      stock: Number(form.stock.value),
+      category: form.category.value
+    };
+    socket.emit('addProduct', data);
+    form.reset();
+  });
+
+  // Baja producto
+  document.getElementById('delete-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const id = Number(e.target.id.value);
+    if (id) socket.emit('deleteProduct', id);
+    e.target.reset();
   });
 </script>
