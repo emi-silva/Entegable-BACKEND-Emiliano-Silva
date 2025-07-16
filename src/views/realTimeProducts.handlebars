@@ -1,65 +1,207 @@
-<h1>Productos en tiempo real</h1>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 Productos en Tiempo Real</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        .form-section {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .form-section h2 {
+            color: #34495e;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        form div {
+            display: flex;
+            flex-direction: column;
+        }
+        form label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        form input[type="text"],
+        form input[type="number"],
+        form button {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        form button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 10px; /* Alinea los botones con los inputs */
+        }
+        form button:hover {
+            background-color: #2980b9;
+        }
+        #delete-form button {
+            background-color: #e74c3c;
+        }
+        #delete-form button:hover {
+            background-color: #c0392b;
+        }
+        ul { list-style-type: none; padding: 0; }
+        li {
+            background-color: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            border: 1px solid #eee;
+        }
+        li strong { font-size: 1.1em; color: #2c3e50; }
+        li span { color: #666; margin-right: 10px; font-size: 0.9em;}
+        li .product-id { font-family: monospace; font-size: 0.85em; background-color: #f0f0f0; padding: 3px 6px; border-radius: 4px; }
+        .no-products {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 1.2em;
+            padding: 30px;
+            border: 1px solid #e74c3c;
+            background-color: #fdeded;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📦 Gestión de Productos en Tiempo Real</h1>
 
-<form id="add-form">
-  <input name="title" placeholder="Título" required>
-  <input name="description" placeholder="Descripción" required>
-  <input name="code" placeholder="Código" required>
-  <input name="price" type="number" placeholder="Precio" required>
-  <input name="stock" type="number" placeholder="Stock" required>
-  <input name="category" placeholder="Categoría" required>
-  <button type="submit">Agregar producto</button>
-</form>
+    <div class="form-section">
+        <h2>➕ Agregar Nuevo Producto</h2>
+        <form id="add-form">
+            <div>
+                <label for="add-title">Título:</label>
+                <input id="add-title" name="title" type="text" placeholder="Título" required>
+            </div>
+            <div>
+                <label for="add-description">Descripción:</label>
+                <input id="add-description" name="description" type="text" placeholder="Descripción" required>
+            </div>
+            <div>
+                <label for="add-code">Código:</label>
+                <input id="add-code" name="code" type="text" placeholder="Código Único" required>
+            </div>
+            <div>
+                <label for="add-price">Precio:</label>
+                <input id="add-price" name="price" type="number" step="0.01" placeholder="Precio" required min="0">
+            </div>
+            <div>
+                <label for="add-stock">Stock:</label>
+                <input id="add-stock" name="stock" type="number" placeholder="Stock" required min="0">
+            </div>
+            <div>
+                <label for="add-category">Categoría:</label>
+                <input id="add-category" name="category" type="text" placeholder="Categoría" required>
+            </div>
+            <button type="submit">Agregar Producto</button>
+        </form>
+    </div>
 
-<form id="delete-form" style="margin-top:10px;">
-  <input name="id" type="number" placeholder="ID a eliminar" required>
-  <button type="submit">Eliminar producto</button>
-</form>
+    <div class="form-section">
+        <h2>➖ Eliminar Producto por ID</h2>
+        <form id="delete-form">
+            <div>
+                <label for="delete-id">ID del producto a eliminar:</label>
+                <input id="delete-id" name="id" type="text" placeholder="ID de Mongoose (ej: 60b8d295f8a7e30015f8e123)" required pattern="^[a-fA-F0-9]{24}$" title="Debe ser un ObjectId válido de 24 caracteres hexadecimales.">
+            </div>
+            <button type="submit">Eliminar Producto</button>
+        </form>
+    </div>
 
-<ul id="product-list">
-  {{#each products}}
-    <li>
-      <strong>{{title}}</strong> - {{description}}<br>
-      Precio: ${{price}} | Stock: {{stock}} | ID: {{id}}
-    </li>
-  {{/each}}
-</ul>
+    <div class="form-section">
+        <h2>📦 Lista Actual de Productos</h2>
+        <ul id="product-list">
+            {{#if products.length}}
+                {{#each products}}
+                    <li>
+                        <strong>{{title}}</strong> - <span>{{description}}</span><br>
+                        <span>Precio: ${{price}}</span> | <span>Stock: {{stock}}</span> | <span>Código: {{code}}</span> | <span>Categoría: {{category}}</span><br>
+                        <span>ID: <span class="product-id">{{_id}}</span></span>
+                    </li>
+                {{/each}}
+            {{else}}
+                <p class="no-products">No hay productos disponibles.</p>
+            {{/if}}
+        </ul>
+    </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
 
-  // Actualiza la lista en tiempo real
-  socket.on('products', products => {
-    const list = document.getElementById('product-list');
-    list.innerHTML = '';
-    products.forEach(p => {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>${p.title}</strong> - ${p.description}<br>Precio: $${p.price} | Stock: ${p.stock} | ID: ${p.id}`;
-      list.appendChild(li);
-    });
-  });
+        // Escucha el evento 'products' del servidor para actualizar la lista
+        socket.on('products', products => {
+            const list = document.getElementById('product-list');
+            list.innerHTML = ''; // Limpia la lista actual
 
-  // Alta producto
-  document.getElementById('add-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const form = e.target;
-    const data = {
-      title: form.title.value,
-      description: form.description.value,
-      code: form.code.value,
-      price: Number(form.price.value),
-      stock: Number(form.stock.value),
-      category: form.category.value
-    };
-    socket.emit('addProduct', data);
-    form.reset();
-  });
+            if (products && products.length > 0) {
+                products.forEach(p => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <strong>${p.title}</strong> - <span>${p.description}</span><br>
+                        <span>Precio: $${p.price}</span> | <span>Stock: ${p.stock}</span> | <span>Código: ${p.code}</span> | <span>Categoría: ${p.category}</span><br>
+                        <span>ID: <span class="product-id">${p._id}</span></span>
+                    `;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = '<p class="no-products">No hay productos disponibles.</p>';
+            }
+        });
 
-  // Baja producto
-  document.getElementById('delete-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const id = Number(e.target.id.value);
-    if (id) socket.emit('deleteProduct', id);
-    e.target.reset();
-  });
-</script>
+        // Manejador del formulario para agregar producto
+        document.getElementById('add-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                title: form.title.value,
+                description: form.description.value,
+                code: form.code.value,
+                price: Number(form.price.value), // Asegura que sea número
+                stock: Number(form.stock.value), // Asegura que sea número
+                category: form.category.value,
+                // thumbnails: [], // Puedes añadir esto si tu form lo permite
+                // status: true // Por defecto si no se incluye en el formulario
+            };
+            socket.emit('addProduct', data); // Emite el evento 'addProduct' al servidor
+            form.reset(); // Limpia el formulario
+        });
+
+        // Manejador del formulario para eliminar producto
+        document.getElementById('delete-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const id = e.target.id.value; // Obtén el ID como string
+            if (id) {
+                // Validación básica de formato de ObjectId antes de emitir
+                if (id.match(/^[a-fA-F0-9]{24}$/)) {
+                    socket.emit('deleteProduct', id); // Emite el evento 'deleteProduct' al servidor
+                } else {
+                    alert('Por favor, ingresa un ID de producto válido (24 caracteres hexadecimales).');
+                }
+            }
+            e.target.reset(); // Limpia el formulario
+        });
+    </script>
+</body>
+</html>

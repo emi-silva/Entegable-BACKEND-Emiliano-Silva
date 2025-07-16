@@ -1,75 +1,120 @@
-const path = require('path');
-const fs = require('fs/promises');
-
-const filePath = path.resolve(__dirname, '../../data/products.json');
+const Product = require('../models/Product');
 
 class ProductManager {
-  constructor() {
-    this.path = filePath;
-  }
+    // El constructor puede recibir 'io' si lo necesitas aquí, pero no es estrictamente necesario para la gestión de DB
+    // constructor(io) {
+    //     this.io = io;
+    // }
 
-  async getProducts() {
-    try {
-      console.log('Intentando leer:', this.path);
-      const data = await fs.readFile(this.path, 'utf-8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.warn(`No se pudo leer archivo ${this.path}, retornando array vacío.`);
-      console.error(error); // <--- Agrega esto para ver el error real
-      return [];
+    /**
+     * Obtiene productos de la base de datos con filtros y paginación.
+     * @param {object} filter - Objeto de filtro para la consulta.
+     * @param {object} options - Opciones de paginación y ordenamiento.
+     * @returns {Promise<object>} Un objeto con los resultados paginados (payload, totalPages, etc.).
+     */
+    async getProducts(filter = {}, options = {}) {
+        try {
+            const result = await Product.paginate(filter, options);
+            // Formatear el resultado para que coincida con el formato esperado por el router
+            return {
+                status: 'success',
+                payload: result.docs, // Los documentos de los productos
+                totalPages: result.totalPages,
+                page: result.page,
+                hasPrevPage: result.hasPrevPage,
+                hasNextPage: result.hasNextPage,
+                prevPage: result.prevPage,
+                nextPage: result.nextPage,
+                // Puedes añadir más propiedades si las necesitas en el frontend
+                limit: result.limit,
+                totalDocs: result.totalDocs
+            };
+        } catch (error) {
+            console.error('Error en ProductManager.getProducts:', error);
+            // Re-lanzar el error o lanzar uno nuevo con un statusCode si es apropiado
+            const customError = new Error('Error al obtener productos de la base de datos.');
+            customError.statusCode = 500;
+            throw customError;
+        }
     }
-  }
 
-  async getProductById(pid) {
-    const products = await this.getProducts();
-    return products.find(prod => prod.id === Number(pid));
-  }
-
-  async addProduct(product) {
-    const products = await this.getProducts();
-
-    if (products.some(p => p.code === product.code)) {
-      throw new Error('El código del producto ya existe');
+    /**
+     * Obtiene un producto específico por su ID.
+     * @param {string} id - El ID del producto a buscar.
+     * @returns {Promise<object>} Un objeto con el producto (payload).
+     * @throws {Error} Si el producto no es encontrado.
+     */
+    async getProductById(id) {
+        const product = await Product.findById(id).lean(); // Usar .lean() para objetos planos
+        if (!product) {
+            const error = new Error('Producto no encontrado');
+            error.statusCode = 404; // Not Found
+            throw error;
+        }
+        return { status: 'success', payload: product };
     }
 
-    const maxId = products.reduce((max, p) => (p.id > max ? p.id : max), 0);
-    const newProduct = {
-      id: maxId + 1,
-      ...product
-    };
+    /**
+     * Agrega un nuevo producto a la base de datos.
+     * @param {object} productData - Datos del producto a agregar
+     * @returns {Promise<object>} Un objeto con el nuevo producto creado (payload).
+     * @throws {Error} Si el código del producto ya existe.
+     */
+    async addProduct(productData) {
+        const exists = await Product.findOne({ code: productData.code });
+        if (exists) {
+            const error = new Error(`El código '${productData.code}' del producto ya existe.`);
+            error.statusCode = 400; // Bad Request
+            throw error;
+        }
 
-    products.push(newProduct);
-    await fs.writeFile(this.path, JSON.stringify(products, null, 2));
-    return newProduct;
-  }
+        const newProduct = new Product(productData);
+        await newProduct.save();
+        return { status: 'success', payload: newProduct.toObject() }; // Convertir a objeto plano
+    }
 
-  async updateProduct(pid, updates) {
-    const products = await this.getProducts();
-    const index = products.findIndex(prod => prod.id === Number(pid));
+    /**
+     * Actualiza un producto existente por su ID.
+     * @param {string} id - El ID del producto a actualizar.
+     * @param {object} updates - Objeto con los campos a actualizar y sus nuevos valores.
+     * @returns {Promise<object>} Un objeto con el producto actualizado (payload).
+     * @throws {Error} Si el producto no es encontrado o si el código actualizado ya existe.
+     */
+    async updateProduct(id, updates) {
+        if (updates.code) {
+            // Verificar si el nuevo código ya está en uso por otro producto
+            const exists = await Product.findOne({ code: updates.code, _id: { $ne: id } });
+            if (exists) {
+                const error = new Error(`El código '${updates.code}' ya pertenece a otro producto.`);
+                error.statusCode = 400; // Bad Request
+                throw error;
+            }
+        }
 
-    if (index === -1) return null;
+        const updated = await Product.findByIdAndUpdate(id, updates, { new: true }).lean(); // Usar .lean()
+        if (!updated) {
+            const error = new Error('Producto no encontrado para actualizar');
+            error.statusCode = 404; // Not Found
+            throw error;
+        }
+        return { status: 'success', payload: updated };
+    }
 
-    const updatedProduct = {
-      ...products[index],
-      ...updates,
-      id: products[index].id
-    };
-
-    products[index] = updatedProduct;
-    await fs.writeFile(this.path, JSON.stringify(products, null, 2));
-    return updatedProduct;
-  }
-
-  async deleteProduct(pid) {
-    const products = await this.getProducts();
-    const initialLength = products.length;
-    const filtered = products.filter(prod => prod.id !== Number(pid));
-
-    if (filtered.length === initialLength) return false;
-
-    await fs.writeFile(this.path, JSON.stringify(filtered, null, 2));
-    return true;
-  }
+    /**
+     * Elimina un producto por su ID.
+     * @param {string} id - El ID del producto a eliminar.
+     * @returns {Promise<object>} Un objeto con el producto eliminado (payload).
+     * @throws {Error} Si el producto no es encontrado.
+     */
+    async deleteProduct(id) {
+        const deleted = await Product.findByIdAndDelete(id).lean(); // Usar .lean()
+        if (!deleted) {
+            const error = new Error('Producto no encontrado para eliminar');
+            error.statusCode = 404; // Not Found
+            throw error;
+        }
+        return { status: 'success', payload: deleted };
+    }
 }
 
-module.exports = { ProductManager };
+module.exports = ProductManager;

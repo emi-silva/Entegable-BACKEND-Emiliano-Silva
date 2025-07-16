@@ -1,11 +1,93 @@
-<!-- filepath: c:\Users\emili\Desktop\ENTREGABLE BACK - EMILIANO SILVA\src\views\layouts\main.handlebars -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>{{title}}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Tienda Online</title>
+    <!-- Aquí puedes enlazar tus hojas de estilo CSS globales -->
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #007acc;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        header nav {
+            margin-top: 10px;
+        }
+
+        header nav a {
+            color: white;
+            margin: 0 15px; /* Aumentado el margen para mejor separación */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+
+        header nav a:hover {
+            color: #e0e0e0;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+            background-color: white;
+            min-height: 80vh;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        footer {
+            background-color: #eee;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-  {{{body}}}
+    <header>
+        <h1>Backend Final - Emiliano Silva</h1>
+        <nav>
+            <a href="/">Catálogo</a>
+            <a href="/realtimeproducts">Productos en Tiempo Real</a>
+            <!-- ✅ ENLACE AL CARRITO (se actualizará con JS) -->
+            <a href="#" id="cartLink">Mi Carrito</a>
+        </nav>
+    </header>
+
+    <main>
+        {{{ body }}} {{! Este es el ÚNICO marcador de posición para el contenido de las vistas }}
+    </main>
+
+    <footer>
+        &copy; 2024 - Proyecto Backend con MongoDB, Express y Handlebars
+    </footer>
+
+    <script>
+        // Script para actualizar el enlace del carrito en el header
+        document.addEventListener('DOMContentLoaded', () => {
+            const cartLink = document.getElementById('cartLink');
+            if (cartLink) {
+                const storedCartId = localStorage.getItem('userCartId');
+                if (storedCartId) {
+                    cartLink.href = `/carts/${storedCartId}`;
+                } else {
+                    // Si no hay cartId, el enlace puede apuntar a la raíz o a una página de "carrito vacío"
+                    // O se puede dejar como '#' y el JS de la página principal lo creará
+                    cartLink.href = '/'; // Opcional: redirigir a la página principal para que se cree el carrito
+                }
+            }
+        });
+    </script>
 </body>
 </html>

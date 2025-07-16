@@ -1,0 +1,213 @@
+<h1>🛍️ Catálogo de Productos</h1>
+
+<div class="controls">
+    <form action="/products" method="GET" id="filterForm">
+        <div>
+            <label for="query">Buscar:</label>
+            <input type="text" id="query" name="query" value="{{currentQuery}}" placeholder="Título, descripción, categoría">
+        </div>
+        <div>
+            <label for="category">Categoría:</label>
+            <input type="text" id="category" name="category" value="{{currentCategory}}" placeholder="Ej: Electrónica">
+        </div>
+        <div>
+            <label for="status">Estado:</label>
+            <select id="status" name="status">
+                <option value="">Todos</option>
+                <option value="true" {{#if (eq currentStatus "true")}}selected{{/if}}>Activo</option>
+                <option value="false" {{#if (eq currentStatus "false")}}selected{{/if}}>Inactivo</option>
+            </select>
+        </div>
+        <div>
+            <label for="sort">Ordenar por precio:</label>
+            <select id="sort" name="sort">
+                <option value="">Sin ordenar</option>
+                <option value="asc" {{#if (eq currentSort "asc")}}selected{{/if}}>Ascendente</option>
+                <option value="desc" {{#if (eq currentSort "desc")}}selected{{/if}}>Descendente</option>
+            </select>
+        </div>
+        <div>
+            <label for="limit">Productos por página:</label>
+            <input type="number" id="limit" name="limit" value="{{limit}}" min="1" max="100">
+        </div>
+        <button type="submit">Aplicar Filtros</button>
+        <button type="button" onclick="window.location.href='/products'">Limpiar Filtros</button>
+    </form>
+</div>
+
+<div class="product-list">
+    {{#if products.length}}
+        <ul>
+            {{#each products}}
+            <li>
+                <div>
+                    <strong>{{this.title}}</strong> - <span>${{this.price}}</span><br>
+                    <span>Código: {{this.code}}</span> |
+                    <span>Stock: {{this.stock}}</span> |
+                    <span>Categoría: {{this.category}}</span>
+                    <p>{{this.description}}</p>
+                </div>
+                <div class="product-actions">
+                    <a href="/products/{{this._id}}" target="_blank">Ver Detalle</a>
+                    {{#if (gt this.stock 0)}} {{! Solo muestra el botón si hay stock > 0 }}
+                        <form data-product-id="{{this._id}}" class="add-to-cart-form">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit">Agregar al Carrito</button>
+                        </form>
+                    {{else}}
+                        <span class="no-stock-message">Sin Stock</span>
+                    {{/if}}
+                </div>
+            </li>
+            {{/each}}
+        </ul>
+    {{else}}
+        <p class="no-products">No se encontraron productos que coincidan con tu búsqueda.</p>
+    {{/if}}
+</div>
+
+<div class="pagination">
+    {{#if hasPrevPage}}
+        <a href="{{prevLink}}">Anterior</a>
+    {{/if}}
+    <span>Página {{page}} de {{totalPages}}</span>
+    {{#if hasNextPage}}
+        <a href="{{nextLink}}">Siguiente</a>
+    {{/if}}
+</div>
+
+<script>
+    let cartId; // Declara cartId para que sea accesible globalmente en el script
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const limitInput = document.getElementById('limit');
+        if (limitInput && !limitInput.value) {
+            limitInput.value = 10; // Establecer un default si no hay valor
+        }
+
+        // 1. Intentar obtener el cartId del localStorage
+        cartId = localStorage.getItem('userCartId');
+
+        // 2. Si no hay cartId, intentar crearlo
+        if (!cartId) {
+            try {
+                // *** CORRECCIÓN CLAVE AQUÍ: Agregar headers y un body vacío ***
+                const response = await fetch('/api/carts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' // Indispensable para que Express lo parsee
+                    },
+                    body: JSON.stringify({}) // Envía un objeto JSON vacío
+                });
+                const data = await response.json();
+
+                if (data.status === 'success' && data.payload && data.payload._id) {
+                    cartId = data.payload._id;
+                    localStorage.setItem('userCartId', cartId);
+                    console.log('✅ Nuevo carrito creado y guardado en localStorage:', cartId);
+                } else {
+                    console.error('❌ Error al crear un nuevo carrito:', data.message || 'Respuesta inesperada');
+                    alert('Hubo un problema al inicializar tu carrito. Por favor, recarga la página.');
+                    return; // Detiene la ejecución si el carrito no se pudo crear
+                }
+            } catch (error) {
+                console.error('❌ Error de red al crear carrito:', error);
+                alert('No se pudo conectar con el servidor para crear el carrito. Verifica tu conexión.');
+                return; // Detiene la ejecución si hay un error de red
+            }
+        } else {
+            console.log('🛒 Carrito existente cargado desde localStorage:', cartId);
+        }
+
+        // 3. Una vez que tenemos el cartId (existente o recién creado), actualizar los formularios
+        updateCartForms(cartId);
+
+        // Función para actualizar las acciones de los formularios de "Agregar al Carrito"
+        function updateCartForms(id) {
+            document.querySelectorAll('.add-to-cart-form').forEach(form => {
+                // No necesitamos modificar form.action si usamos data-product-id
+                // La acción del formulario ya no es necesaria, la URL se construye en el fetch.
+                // Sin embargo, si quieres mantenerla para retrocompatibilidad o envíos tradicionales:
+                // const productId = form.dataset.productId || form.action.split('/').pop();
+                // form.action = `/api/carts/${id}/products/${productId}`;
+            });
+        }
+
+        // Controladores para los formularios de agregar al carrito
+        document.querySelectorAll('.add-to-cart-form').forEach(form => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                // Obtener el ID del producto directamente del atributo data-product-id
+                const productId = form.dataset.productId;
+                const quantity = form.querySelector('input[name="quantity"]').value;
+
+                if (!cartId) {
+                    alert('Error: No se pudo obtener el ID del carrito. Intenta recargar la página.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/carts/${cartId}/products/${productId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ quantity: Number(quantity) })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        alert('✅ Producto agregado al carrito con éxito!');
+                        // Opcional: Redirigir al carrito o actualizar un mini-carrito
+                        // window.location.href = `/carts/${cartId}`;
+                    } else {
+                        alert('❌ Error al agregar el producto al carrito: ' + (data.message || 'Error desconocido'));
+                        console.error('Error:', data);
+                    }
+                } catch (error) {
+                    console.error('❌ Error de red al agregar producto:', error);
+                    alert('Error de conexión al servidor. No se pudo agregar el producto.');
+                }
+            });
+        });
+
+    });
+</script>
+
+<style>
+    /* Estilos básicos para mejor visualización */
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+    h1 { text-align: center; color: #3498db; }
+    .controls { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+    .controls form { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+    .controls div { display: flex; flex-direction: column; }
+    .controls label { font-weight: bold; margin-bottom: 5px; color: #555; }
+    .controls input[type="text"],
+    .controls input[type="number"],
+    .controls select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 150px; }
+    .controls button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+    .controls button[type="submit"] { background-color: #28a745; color: white; }
+    .controls button[type="submit"]:hover { background-color: #218838; }
+    .controls button[type="button"] { background-color: #6c757d; color: white; }
+    .controls button[type="button"]:hover { background-color: #5a6268; }
+
+    .product-list ul { list-style: none; padding: 0; }
+    .product-list li { background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+    .product-list li strong { color: #3498db; font-size: 1.2em; }
+    .product-list li span { color: #666; font-size: 0.9em; }
+    .product-list li p { margin-top: 5px; line-height: 1.5; }
+
+    .product-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 10px; }
+    .product-actions a { background-color: #007bff; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9em; }
+    .product-actions a:hover { background-color: #0056b3; }
+    .product-actions button { background-color: #ffc107; color: #333; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+    .product-actions button:hover { background-color: #e0a800; }
+    .no-stock-message { color: #dc3545; font-weight: bold; padding: 8px 12px; border: 1px solid #dc3545; border-radius: 4px; font-size: 0.9em; }
+
+    .no-products { text-align: center; color: #777; font-size: 1.1em; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+    .pagination { text-align: center; margin-top: 25px; padding: 15px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .pagination a { background-color: #17a2b8; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none; margin: 0 5px; display: inline-block; }
+    .pagination a:hover { background-color: #138496; }
+    .pagination span { font-weight: bold; margin: 0 10px; color: #555; }
+</style>

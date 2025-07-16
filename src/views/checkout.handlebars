@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+   <h1>✅ Compra Finalizada con Éxito</h1>
+
+<div class="checkout-message">
+    <p>¡Gracias por tu compra! Tu pedido ha sido procesado.</p>
+    <p>Pronto recibirás un correo electrónico con los detalles de tu pedido.</p>
+    {{#if orderId}}
+        <p>Tu número de pedido es: <strong>#{{orderId}}</strong></p>
+    {{else}}
+        <p>No se pudo obtener el número de pedido en este momento.</p>
+    {{/if}}
+</div>
+
+<div class="checkout-actions">
+    <a href="/products" class="back-to-shop-btn">Volver al Catálogo</a>
+</div>
+
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; }
+    h1 { color: #28a745; text-align: center; margin-bottom: 30px; }
+    .checkout-message {
+        background-color: #e9ffe9;
+        border: 1px solid #28a745;
+        border-radius: 8px;
+        padding: 30px;
+        max-width: 600px;
+        margin: 40px auto;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .checkout-message p { font-size: 1.1em; line-height: 1.6; margin-bottom: 15px; }
+    .checkout-message strong { color: #2c3e50; }
+    .checkout-actions { text-align: center; margin-top: 30px; }
+    .back-to-shop-btn {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.2s ease;
+    }
+    .back-to-shop-btn:hover { background-color: #0056b3; }
+</style>
+            <a href="/cart">Carrito</a>
+            <a href="/checkout">Checkout</a>
+        </nav>
+    </header>
+    <main>
+        {{{body}}}
+    </main>
+    <footer>
+        <p>&copy; 2023 Mi Tienda Online. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>

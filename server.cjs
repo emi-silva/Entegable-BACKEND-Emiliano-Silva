@@ -1,43 +1,83 @@
-const express = require('express');
-const app = require('./app.js');
-const http = require('http');
-const { Server } = require('socket.io');
-const { ProductManager } = require('./src/managers/ProductManager.js');
+require('dotenv').config();
 
-const PORT = 8080;
+const http = require('http');
+const mongoose = require('mongoose');
+const { Server } = require('socket.io');
+
+const app = require('./app.js');
+
+const ProductManager = require('./src/managers/ProductManager');
+
+const PORT = process.env.PORT || 8080;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/backendFinal';
+
 const server = http.createServer(app);
 const io = new Server(server);
 
-const manager = new ProductManager();
+// **1. Conexión a MongoDB (Fuera del 'then' para una mejor gestión)**
+mongoose.connect(MONGO_URI)
+    .then(() => {
+        console.log('🟢 Conectado a MongoDB');
 
-app.set('io', io);
+        // **2. Instanciar Managers DESPUÉS de asegurar la conexión a la DB**
+        const productManagerInstance = new ProductManager(io); 
 
-io.on('connection', async (socket) => {
-  // Enviar productos al conectar
-  socket.emit('products', await manager.getProducts());
+        // **3. Configuración de Socket.io**
+        io.on('connection', async (socket) => {
+            console.log(`🧠 Cliente conectado vía Socket.io: ${socket.id}`);
 
-  // Alta producto por socket
-  socket.on('addProduct', async (data) => {
-    try {
-      await manager.addProduct(data);
-      io.emit('products', await manager.getProducts());
-    } catch (error) {
-      socket.emit('error', error.message);
-    }
-  });
+            // Emitir productos iniciales al cliente que se conecta
+            try {
+                const productos = await productManagerInstance.getProducts({}); // Pasar un objeto vacío si no hay query/limit/page
+                socket.emit('products', productos.payload); // Asumiendo que getProducts devuelve el formato esperado {payload: ...}
+            } catch (err) {
+                console.error('Error al obtener y emitir productos iniciales vía Socket.io:', err);
+                socket.emit('error', 'Error al obtener productos iniciales.');
+            }
 
-  // Baja producto por socket
-  socket.on('deleteProduct', async (id) => {
-    try {
-      await manager.deleteProduct(id);
-      io.emit('products', await manager.getProducts());
-    } catch (error) {
-      socket.emit('error', error.message);
-    }
-  });
-});
+            // Manejadores de eventos de Socket.io
+            socket.on('addProduct', async (data) => {
+                try {
+                    await productManagerInstance.addProduct(data);
+                    // Emitir productos actualizados a TODOS los clientes después de una modificación
+                    const updatedProducts = await productManagerInstance.getProducts({});
+                    io.emit('products', updatedProducts.payload);
+                } catch (error) {
+                    console.error('Error al agregar producto vía Socket.io:', error);
+                    socket.emit('error', error.message || 'Error al agregar producto.');
+                }
+            });
 
-server.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+            socket.on('deleteProduct', async (id) => {
+                try {
+                    await productManagerInstance.deleteProduct(id);
+                    // Emitir productos actualizados a TODOS los clientes después de una modificación
+                    const updatedProducts = await productManagerInstance.getProducts({});
+                    io.emit('products', updatedProducts.payload);
+                } catch (error) {
+                    console.error('Error al eliminar producto vía Socket.io:', error);
+                    socket.emit('error', error.message || 'Error al eliminar producto.');
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log(`🔌 Cliente desconectado: ${socket.id}`);
+            });
+        });
+
+        // **4. Iniciar el servidor SOLO después de que la base de datos esté conectada**
+        server.listen(PORT, () => {
+            console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+        }).on('error', err => {
+            console.error('❌ Error al iniciar el servidor:', err.message);
+        });
+
+    })
+    .catch(err => {
+        console.error('🔴 Error de conexión a MongoDB. El servidor NO se iniciará:', err.message);
+        process.exit(1); 
+    });
+
+
+module.exports = app;
 

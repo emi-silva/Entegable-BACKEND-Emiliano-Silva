@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{product.title}} - Detalle del Producto</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; }
+        .card {
+            background-color: #fff;
+            padding: 30px;
+            max-width: 700px;
+            margin: 40px auto;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 15px;
+        }
+        p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        p strong {
+            color: #34495e;
+            display: inline-block;
+            min-width: 100px; /* Para alinear etiquetas */
+        }
+        .stock-info {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .stock-info.low {
+            color: #e67e22; /* Naranja para stock bajo */
+        }
+        .stock-info.out {
+            color: #e74c3c; /* Rojo para sin stock */
+        }
+        form {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #e0e0e0;
+        }
+        form label {
+            font-weight: bold;
+            color: #555;
+            font-size: 1.1em;
+        }
+        form input[type="number"] {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            width: 80px;
+            text-align: center;
+        }
+        form button {
+            padding: 12px 25px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.2s ease;
+        }
+        form button:hover {
+            background-color: #27ae60;
+        }
+        form button:disabled {
+            background-color: #cccccc; /* Estilo para botón deshabilitado */
+            cursor: not-allowed;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            text-decoration: none;
+            color: #3498db;
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 10px 15px;
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .back-link:hover {
+            background-color: #3498db;
+            color: white;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{{product.title}}</h1>
+        <p><strong>Descripción:</strong> {{product.description}}</p>
+        <p><strong>Precio:</strong> ${{product.price}}</p>
+        <p><strong>Código:</strong> {{product.code}}</p>
+        <p><strong>Categoría:</strong> {{product.category}}</p>
+        <p><strong>Stock:</strong>
+            {{#if (gt product.stock 0)}}
+                <span class="stock-info {{#if (lt product.stock 5)}}low{{/if}}">{{product.stock}} unidades disponibles</span>
+            {{else}}
+                <span class="stock-info out">¡Sin stock!</span>
+            {{/if}}
+        </p>
+
+        {{!-- Formulario para agregar al carrito --}}
+        {{!-- El script JS se encargará de gestionar el `cartId` y la acción del formulario --}}
+        <form data-product-id="{{product._id}}" class="add-to-cart-form">
+            <label for="qty">Cantidad:</label>
+            <input type="number" name="quantity" id="qty" value="1" min="1" max="{{product.stock}}" {{#if (eq product.stock 0)}}disabled{{/if}} required>
+            <button type="submit" {{#if (eq product.stock 0)}}disabled{{/if}}>
+                {{#if (gt product.stock 0)}}Agregar al carrito{{else}}Sin Stock{{/if}}
+            </button>
+        </form>
+
+        <a href="/products" class="back-link">← Volver al catálogo</a>
+    </div>
+
+    <script>
+        let cartId; // Declaramos `cartId` para que sea accesible en todo el script
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const productId = "{{product._id}}"; // Obtenemos el ID del producto de la plantilla
+            const stock = {{product.stock}}; // Obtenemos el stock del producto de la plantilla
+
+            const qtyInput = document.getElementById('qty');
+            const addButton = document.querySelector('.add-to-cart-form button[type="submit"]');
+
+            // Actualizar estado inicial del botón y el input de cantidad según el stock
+            if (stock <= 0) {
+                if (qtyInput) {
+                    qtyInput.value = 0;
+                    qtyInput.disabled = true;
+                }
+                if (addButton) {
+                    addButton.disabled = true;
+                    addButton.textContent = 'Sin Stock';
+                }
+            } else {
+                if (qtyInput) qtyInput.max = stock; // Establecer cantidad máxima al stock disponible
+            }
+
+            // 1. Intentar obtener el `cartId` del `localStorage`
+            cartId = localStorage.getItem('userCartId');
+
+            // 2. Si no hay `cartId`, intentar crearlo
+            if (!cartId) {
+                try {
+                    // *** CORRECCIÓN CLAVE AQUÍ: Agregar headers y un body vacío ***
+                    const response = await fetch('/api/carts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json' // Indispensable para que Express lo parsee
+                        },
+                        body: JSON.stringify({}) // Envía un objeto JSON vacío
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success' && data.payload && data.payload._id) {
+                        cartId = data.payload._id;
+                        localStorage.setItem('userCartId', cartId);
+                        console.log('✅ Nuevo carrito creado y guardado en localStorage:', cartId);
+                    } else {
+                        console.error('❌ Error al crear un nuevo carrito:', data.message || 'Respuesta inesperada');
+                        alert('Hubo un problema al inicializar tu carrito. Por favor, recarga la página.');
+                        if (addButton) addButton.disabled = true; // Deshabilita el botón si no se pudo crear el carrito
+                        return; // Detiene la ejecución si el carrito no se pudo crear
+                    }
+                } catch (error) {
+                    console.error('❌ Error de red al crear carrito:', error);
+                    alert('No se pudo conectar con el servidor para crear el carrito. Verifica tu conexión.');
+                    if (addButton) addButton.disabled = true; // Deshabilita el botón si hay error de red
+                    return; // Detiene la ejecución si hay un error de red
+                }
+            } else {
+                console.log('🛒 Carrito existente cargado desde localStorage:', cartId);
+            }
+
+            // 3. Manejar el envío del formulario de "Agregar al Carrito"
+            const form = document.querySelector('.add-to-cart-form');
+            if (form) {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault(); // Previene el envío tradicional del formulario
+
+                    const quantity = Number(qtyInput.value);
+
+                    // Validar cantidad
+                    if (quantity <= 0 || quantity > stock) {
+                        alert(`Por favor, ingresa una cantidad válida entre 1 y ${stock}.`);
+                        return;
+                    }
+
+                    if (!cartId) {
+                        alert('Error: No se pudo obtener el ID del carrito. Intenta recargar la página.');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/carts/${cartId}/products/${productId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ quantity }) // Envía la cantidad como JSON
+                        });
+                        const data = await response.json();
+
+                        if (response.ok && data.status === 'success') { // Verifica response.ok también
+                            alert('✅ Producto agregado al carrito con éxito!');
+                            // Opcional: Redirigir al carrito o actualizar UI
+                            // window.location.href = `/carts/${cartId}`;
+                        } else {
+                            // Mostrar el mensaje de error del backend
+                            alert('❌ Error al agregar el producto al carrito: ' + (data.message || 'Error desconocido'));
+                            console.error('Error del servidor:', data);
+                        }
+                    } catch (error) {
+                        console.error('❌ Error de red al agregar producto:', error);
+                        alert('Error de conexión al servidor. No se pudo agregar el producto.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
