@@ -91,13 +91,13 @@
         // 2. Si no hay cartId, intentar crearlo
         if (!cartId) {
             try {
-                // *** CORRECCIÓN CLAVE AQUÍ: Agregar headers y un body vacío ***
+                
                 const response = await fetch('/api/carts', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json' // Indispensable para que Express lo parsee
+                        'Content-Type': 'application/json' 
                     },
-                    body: JSON.stringify({}) // Envía un objeto JSON vacío
+                    body: JSON.stringify({}) 
                 });
                 const data = await response.json();
 
@@ -119,17 +119,12 @@
             console.log('🛒 Carrito existente cargado desde localStorage:', cartId);
         }
 
-        // 3. Una vez que tenemos el cartId (existente o recién creado), actualizar los formularios
+        // 3. Una vez que tenemos el cartId, actualiza los formularios
         updateCartForms(cartId);
 
         // Función para actualizar las acciones de los formularios de "Agregar al Carrito"
         function updateCartForms(id) {
             document.querySelectorAll('.add-to-cart-form').forEach(form => {
-                // No necesitamos modificar form.action si usamos data-product-id
-                // La acción del formulario ya no es necesaria, la URL se construye en el fetch.
-                // Sin embargo, si quieres mantenerla para retrocompatibilidad o envíos tradicionales:
-                // const productId = form.dataset.productId || form.action.split('/').pop();
-                // form.action = `/api/carts/${id}/products/${productId}`;
             });
         }
 
@@ -137,7 +132,7 @@
         document.querySelectorAll('.add-to-cart-form').forEach(form => {
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                // Obtener el ID del producto directamente del atributo data-product-id
+                
                 const productId = form.dataset.productId;
                 const quantity = form.querySelector('input[name="quantity"]').value;
 
@@ -158,8 +153,7 @@
 
                     if (data.status === 'success') {
                         alert('✅ Producto agregado al carrito con éxito!');
-                        // Opcional: Redirigir al carrito o actualizar un mini-carrito
-                        // window.location.href = `/carts/${cartId}`;
+                        
                     } else {
                         alert('❌ Error al agregar el producto al carrito: ' + (data.message || 'Error desconocido'));
                         console.error('Error:', data);
@@ -175,7 +169,7 @@
 </script>
 
 <style>
-    /* Estilos básicos para mejor visualización */
+    
     body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
     h1 { text-align: center; color: #3498db; }
     .controls { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }

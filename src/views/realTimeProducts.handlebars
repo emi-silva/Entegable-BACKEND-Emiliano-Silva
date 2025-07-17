@@ -181,8 +181,7 @@
                 price: Number(form.price.value), // Asegura que sea número
                 stock: Number(form.stock.value), // Asegura que sea número
                 category: form.category.value,
-                // thumbnails: [], // Puedes añadir esto si tu form lo permite
-                // status: true // Por defecto si no se incluye en el formulario
+                
             };
             socket.emit('addProduct', data); // Emite el evento 'addProduct' al servidor
             form.reset(); // Limpia el formulario

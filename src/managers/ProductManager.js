@@ -1,10 +1,5 @@
 const Product = require('../models/Product');
-
 class ProductManager {
-    // El constructor puede recibir 'io' si lo necesitas aquí, pero no es estrictamente necesario para la gestión de DB
-    // constructor(io) {
-    //     this.io = io;
-    // }
 
     /**
      * Obtiene productos de la base de datos con filtros y paginación.
@@ -25,7 +20,7 @@ class ProductManager {
                 hasNextPage: result.hasNextPage,
                 prevPage: result.prevPage,
                 nextPage: result.nextPage,
-                // Puedes añadir más propiedades si las necesitas en el frontend
+                
                 limit: result.limit,
                 totalDocs: result.totalDocs
             };
@@ -45,7 +40,7 @@ class ProductManager {
      * @throws {Error} Si el producto no es encontrado.
      */
     async getProductById(id) {
-        const product = await Product.findById(id).lean(); // Usar .lean() para objetos planos
+        const product = await Product.findById(id).lean(); 
         if (!product) {
             const error = new Error('Producto no encontrado');
             error.statusCode = 404; // Not Found
@@ -70,7 +65,7 @@ class ProductManager {
 
         const newProduct = new Product(productData);
         await newProduct.save();
-        return { status: 'success', payload: newProduct.toObject() }; // Convertir a objeto plano
+        return { status: 'success', payload: newProduct.toObject() }; 
     }
 
     /**
@@ -107,7 +102,7 @@ class ProductManager {
      * @throws {Error} Si el producto no es encontrado.
      */
     async deleteProduct(id) {
-        const deleted = await Product.findByIdAndDelete(id).lean(); // Usar .lean()
+        const deleted = await Product.findByIdAndDelete(id).lean(); 
         if (!deleted) {
             const error = new Error('Producto no encontrado para eliminar');
             error.statusCode = 404; // Not Found

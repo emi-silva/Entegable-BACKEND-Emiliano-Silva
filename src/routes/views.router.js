@@ -1,14 +1,12 @@
-// src/routes/views.router.js
 const { Router } = require('express');
 const ProductManager = require('../managers/ProductManager'); // Importa tu ProductManager
-const { CartManager } = require('../managers/CartManager'); // Importa tu CartManager (con desestructuración)
+const { CartManager } = require('../managers/CartManager'); // Importa tu CartManager 
 
 const router = Router();
 const productManager = new ProductManager();
 const cartManager = new CartManager(); // Instancia el CartManager
 
 // Vista de productos paginada con filtros (index.handlebars)
-// Responde tanto a la ruta raíz '/' como a '/products'
 router.get(['/', '/products'], async (req, res, next) => {
     try {
         const { page = 1, limit = 10, sort, query, category, status } = req.query;
@@ -22,7 +20,7 @@ router.get(['/', '/products'], async (req, res, next) => {
             ];
         }
         if (category) filter.category = category;
-        // Asegúrate de que `status` se maneje correctamente como booleano
+        
         if (status !== undefined && (status === 'true' || status === 'false')) {
             filter.status = status === 'true';
         }
@@ -30,7 +28,7 @@ router.get(['/', '/products'], async (req, res, next) => {
         const options = {
             page: Number(page),
             limit: Number(limit),
-            lean: true, // Importante para Handlebars, devuelve objetos planos
+            lean: true,
             sort: {}
         };
 
@@ -51,13 +49,12 @@ router.get(['/', '/products'], async (req, res, next) => {
             const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
             const params = new URLSearchParams(req.query);
             params.set('page', targetPage);
-            // Usamos /products para los links generados para mantener la consistencia en la URL
+            
             const currentPath = req.path === '/' ? '/products' : req.path;
             return `${req.protocol}://${req.get('host')}${currentPath}?${params.toString()}`;
         };
 
-        // Manejo del cartId para las vistas (si se usa express-session)
-        // Para esta entrega, el frontend JavaScript gestiona el cartId con localStorage.
+        // Manejo del cartId para las vistas 
         let currentCartId = null;
         if (req.session && req.session.cartId) {
             currentCartId = req.session.cartId;
@@ -106,13 +103,11 @@ router.get('/products/:pid', async (req, res, next) => {
         // Accede al payload, que es el producto
         const product = productResult.payload;
 
-        // Manejo del cartId para esta vista (si se usa express-session)
+        // Manejo del cartId para esta vista 
         let currentCartId = null;
         if (req.session && req.session.cartId) {
             currentCartId = req.session.cartId;
         }
-        // Si no tienes sesiones, el script en productDetail.handlebars
-        // intentará gestionar el cartId con localStorage.
 
         res.render('productDetail', { product: product, cartId: currentCartId });
     } catch (error) {
@@ -127,18 +122,18 @@ router.get('/carts/:cid', async (req, res, next) => {
         const cartResult = await cartManager.getCartById(cid);
         const cart = cartResult.payload; // Accede al payload, que es el carrito populado
 
-        // *** AGREGAR ESTE CONSOLE.LOG AQUÍ ***
+        
         console.log('Objeto carrito recibido en views.router.js:', cart);
         console.log('Tipo de cart.products:', typeof cart.products, Array.isArray(cart.products) ? 'Es un array' : 'NO es un array');
-        // ************************************
+        
 
-        if (!cart) { // Esta verificación puede ser redundante si getCartById ya lanza 404
+        if (!cart) { 
             return res.status(404).render('error', { message: 'Carrito no encontrado.' });
         }
 
         // Calcular el total del carrito
         let cartTotal = 0;
-        // Asegúrate de que product.price y item.quantity sean números válidos
+        
         cart.products.forEach(item => {
             if (item.product && typeof item.product.price === 'number' && typeof item.quantity === 'number') {
                 cartTotal += item.product.price * item.quantity;
@@ -153,8 +148,8 @@ router.get('/carts/:cid', async (req, res, next) => {
 
 // ✅ Vista de compra finalizada
 router.get('/checkout', (req, res) => {
-    const { orderId } = req.query; // Obtener orderId de los query parameters
-    res.render('checkout', { orderId: orderId }); // Pasar orderId a la plantilla
+    const { orderId } = req.query; 
+    res.render('checkout', { orderId: orderId }); 
 });
 
 module.exports = router;

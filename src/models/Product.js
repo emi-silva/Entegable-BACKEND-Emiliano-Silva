@@ -1,4 +1,3 @@
-// src/models/Product.js
 const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate-v2');
 
@@ -53,7 +52,7 @@ const productSchema = new mongoose.Schema({
   },
   thumbnails: {
     type: [String],
-    default: [] // Un array vacío por defecto si no hay miniaturas
+    default: [] 
   }
 }, {
   timestamps: true // Agrega campos createdAt y updatedAt automáticamente

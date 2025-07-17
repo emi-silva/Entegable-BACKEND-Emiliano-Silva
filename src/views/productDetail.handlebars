@@ -121,7 +121,7 @@
         </p>
 
         {{!-- Formulario para agregar al carrito --}}
-        {{!-- El script JS se encargará de gestionar el `cartId` y la acción del formulario --}}
+        
         <form data-product-id="{{product._id}}" class="add-to-cart-form">
             <label for="qty">Cantidad:</label>
             <input type="number" name="quantity" id="qty" value="1" min="1" max="{{product.stock}}" {{#if (eq product.stock 0)}}disabled{{/if}} required>
@@ -134,7 +134,7 @@
     </div>
 
     <script>
-        let cartId; // Declaramos `cartId` para que sea accesible en todo el script
+        let cartId; 
 
         document.addEventListener('DOMContentLoaded', async () => {
             const productId = "{{product._id}}"; // Obtenemos el ID del producto de la plantilla
@@ -163,13 +163,13 @@
             // 2. Si no hay `cartId`, intentar crearlo
             if (!cartId) {
                 try {
-                    // *** CORRECCIÓN CLAVE AQUÍ: Agregar headers y un body vacío ***
+                    
                     const response = await fetch('/api/carts', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json' // Indispensable para que Express lo parsee
+                            'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({}) // Envía un objeto JSON vacío
+                        body: JSON.stringify({}) 
                     });
                     const data = await response.json();
 
@@ -224,8 +224,7 @@
 
                         if (response.ok && data.status === 'success') { // Verifica response.ok también
                             alert('✅ Producto agregado al carrito con éxito!');
-                            // Opcional: Redirigir al carrito o actualizar UI
-                            // window.location.href = `/carts/${cartId}`;
+                            
                         } else {
                             // Mostrar el mensaje de error del backend
                             alert('❌ Error al agregar el producto al carrito: ' + (data.message || 'Error desconocido'));

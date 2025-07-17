@@ -1,4 +1,3 @@
-// src/managers/CartManager.js
 const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
@@ -285,9 +284,8 @@ class CartManager {
 
             // 1. Validar stock y separar productos
             for (const item of cart.products) {
-                const productDb = await Product.findById(item.product._id); // Obtener el producto actual de la DB
+                const productDb = await Product.findById(item.product._id); 
                 if (!productDb) {
-                    // Si el producto no existe en la DB, no se puede comprar
                     productsFailedStock.push({ productId: item.product._id, reason: 'Producto no encontrado en el catálogo.' });
                     continue;
                 }
@@ -313,8 +311,7 @@ class CartManager {
                 await Product.findByIdAndUpdate(item.product._id, { $inc: { stock: -item.quantity } });
             }
 
-            // 3. Vaciar el carrito (o dejar solo los productos que no se pudieron comprar)
-            // Aquí vaciamos el carrito completamente por simplicidad
+            // 3. Vaciar el carrito 
             cart.products = [];
             await cart.save();
 

@@ -1,6 +1,5 @@
-// src/routes/product.router.js
 const { Router } = require('express');
-const ProductManager = require('../managers/ProductManager'); // Importa tu ProductManager
+const ProductManager = require('../managers/ProductManager'); // Importa ProductManager
 const mongoose = require('mongoose'); // Necesario para validar ObjectId
 
 const router = Router();
@@ -35,7 +34,7 @@ router.get('/', async (req, res, next) => {
             filter.category = category;
         }
         if (status !== undefined) {
-            // Filtro por estado (true/false), convierte el string a booleano
+            
             filter.status = status === 'true';
         }
 
@@ -43,7 +42,7 @@ router.get('/', async (req, res, next) => {
         const options = {
             limit: Number(limit), // Asegura que limit sea un número
             page: Number(page),   // Asegura que page sea un número
-            lean: true,           // Devuelve objetos JS planos, no documentos Mongoose completos (más eficiente para vistas)
+            lean: true,           // Devuelve objetos JS planos, no documentos Mongoose completos
             sort: {}              // Objeto para el ordenamiento
         };
 
@@ -58,11 +57,9 @@ router.get('/', async (req, res, next) => {
         const result = await productManager.getProducts(filter, options);
 
         // Si no se encuentran documentos, devuelve un 404 específico
-        // Nota: getProducts devuelve un payload vacío si no hay resultados,
-        // por lo que esta verificación es más para una respuesta de API específica
+      
         if (result.payload.length === 0 && (query || category || status !== undefined)) {
-             // Solo si hay filtros y no se encontraron productos, consideramos un 404
-             // Si no hay filtros y el catálogo está vacío, es un 200 con payload vacío
+             
              if (result.totalDocs === 0) { // Si realmente no hay ningún documento en la colección
                 const error = new Error('No se encontraron productos que coincidan con los criterios de búsqueda.');
                 error.statusCode = 404;

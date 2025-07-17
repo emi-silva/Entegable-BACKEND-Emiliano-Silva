@@ -1,11 +1,10 @@
-// src/models/Cart.js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const cartSchema = new Schema({
-    // El 'user' podría ser un ObjectId que referencia a un modelo de usuario si lo tuvieras
+    
     userId: {
-        type: String, // O Schema.Types.ObjectId si vas a referenciar un modelo de usuario
+        type: String, 
         default: 'guest', // Valor por defecto si el usuario no está logueado
         index: true // Para búsquedas eficientes por userId
     },

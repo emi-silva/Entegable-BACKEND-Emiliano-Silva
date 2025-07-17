@@ -1,4 +1,3 @@
-
 async function getOrCreateCartId() {
     let cartId = localStorage.getItem('userCartId');
 
@@ -164,9 +163,8 @@ async function finalizePurchase() {
         const response = await fetch(`/api/carts/${currentCartId}/purchase`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
-            // No se necesita body para esta API si solo se usa el cartId del URL
         });
-        const data = await response.json(); // Intentará parsear la respuesta como JSON
+        const data = await response.json();
 
         if (response.ok && data.status === 'success') {
             alert('✅ Compra finalizada con éxito! Tu número de pedido es: ' + data.payload.ticketId);

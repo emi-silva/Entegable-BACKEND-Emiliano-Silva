@@ -1,4 +1,3 @@
-// src/routes/cart.router.js
 const { Router } = require('express');
 const { CartManager } = require('../managers/CartManager');
 const mongoose = require('mongoose');
