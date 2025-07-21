@@ -1,6 +1,6 @@
 const express = require('express');
 const handlebars = require('express-handlebars');
-const path = require('path'); // Módulo 'path' para construir rutas de archivos absolutas
+const path = require('path'); 
 
 // Importar los routers
 
