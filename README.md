@@ -38,5 +38,29 @@ Este proyecto refleja el dominio de:
 - Manejo de variables de entorno con dotenv.
 - Organización de código orientada a producción.
 
+BACKEND 2 1er entregable:
+
+### 🔒 Autenticación y Autorización
+
+El proyecto implementa un sistema completo de autenticación y autorización de usuarios utilizando **Passport.js** y **JWT**.  
+Incluye:
+
+- Modelo de usuario con contraseña encriptada (bcrypt).
+- Registro y login de usuarios con generación de token JWT.
+- Estrategia Passport JWT para proteger rutas y validar usuarios autenticados.
+- Endpoint `/api/sessions/current` para obtener los datos del usuario logueado mediante el token.
+
+### 👤 CRUD de Usuarios
+
+Se desarrolló un CRUD completo para la gestión de usuarios:
+
+- **Crear** usuario: `POST /api/users`
+- **Listar** usuarios: `GET /api/users`
+- **Ver** usuario por ID: `GET /api/users/:id`
+- **Actualizar** usuario: `PUT /api/users/:id`
+- **Eliminar** usuario: `DELETE /api/users/:id`
+
+Esto permite administrar usuarios de forma segura y eficiente, cumpliendo con los requisitos del proyecto.
+
 ✍️ Autor
 Emiliano Silva
