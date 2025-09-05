@@ -1,6 +1,9 @@
 const { Router } = require('express');
 const { CartManager } = require('../managers/CartManager');
 const mongoose = require('mongoose');
+const Product = require('../models/Product');
+const TicketRepository = require('../repositories/TicketRepository');
+const passport = require('passport');
 
 const router = Router();
 const cartManager = new CartManager();
@@ -13,6 +16,49 @@ const validateObjectId = (id, paramName) => {
         throw error;
     }
 };
+
+// Endpoint de compra: genera ticket, verifica stock y maneja compras incompletas
+router.post('/:cid/purchase', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
+    try {
+        const { cid } = req.params;
+        validateObjectId(cid, 'carrito');
+        const cart = await cartManager.getCartById(cid);
+        if (!cart || !cart.payload) return res.status(404).json({ error: 'Carrito no encontrado' });
+        const user = req.user;
+        let total = 0;
+        let purchasedProducts = [];
+        let notPurchased = [];
+        for (const item of cart.payload.products) {
+            const product = await Product.findById(item.product._id);
+            if (product && product.stock >= item.quantity) {
+                product.stock -= item.quantity;
+                await product.save();
+                total += product.price * item.quantity;
+                purchasedProducts.push({ product: product._id, quantity: item.quantity });
+            } else {
+                notPurchased.push({ product: item.product._id, quantity: item.quantity });
+            }
+        }
+        if (purchasedProducts.length === 0) {
+            return res.status(400).json({ error: 'No hay productos con stock suficiente para comprar.' });
+        }
+        // Generar código único para el ticket
+        const code = 'TICKET-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+        const ticket = await TicketRepository.create({
+            code,
+            amount: total,
+            purchaser: user.email,
+            products: purchasedProducts
+        });
+        // Eliminar productos comprados del carrito
+        cart.payload.products = cart.payload.products.filter(item => notPurchased.some(np => np.product.equals(item.product._id)));
+        await cart.payload.save();
+        res.json({ status: 'success', ticket, notPurchased });
+    } catch (error) {
+        next(error);
+    }
+});
+// ...existing code...
 
 // 🟢 GET /api/carts — Obtener todos los carritos (solo para desarrollo/admin)
 router.get('/', async (req, res, next) => {

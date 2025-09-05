@@ -4,6 +4,8 @@ const path = require('path');
 const passport = require('passport');
 require('./src/config/passport'); // Importa tu configuración de passport
 
+const cookieParser = require('cookie-parser'); // Agregar cookie-parser
+
 // Importar los routers
 const productsRouter = require('./src/routes/product.router');
 const cartsRouter = require('./src/routes/cart.router');
@@ -17,6 +19,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cookieParser()); // Usar cookie-parser
 app.use(passport.initialize());
 
 // --- Configuración del Motor de Plantillas Handlebars ---

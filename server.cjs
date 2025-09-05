@@ -1,20 +1,16 @@
+
 require('dotenv').config();
-
 const http = require('http');
-const mongoose = require('mongoose');
 const { Server } = require('socket.io');
-
-const app = require('./app.js');
-
 const ProductManager = require('./src/managers/ProductManager');
-
-const PORT = process.env.PORT || 8080;
+const mongoose = require('mongoose');
+const app = require('./app.js');
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/backendFinal';
-
+const PORT = process.env.PORT || 8080;
 const server = http.createServer(app);
 const io = new Server(server);
 
-// **1. Conexión a MongoDB (Fuera del 'then' para una mejor gestión)**
+
 mongoose.connect(MONGO_URI)
     .then(() => {
         console.log('🟢 Conectado a MongoDB');
@@ -79,5 +75,4 @@ mongoose.connect(MONGO_URI)
     });
 
 
-module.exports = app;
 
