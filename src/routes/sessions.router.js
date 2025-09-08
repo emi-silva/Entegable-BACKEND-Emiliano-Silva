@@ -33,22 +33,23 @@ router.post('/reset-password', async (req, res) => {
     res.status(400).json({ error: 'Token inválido o expirado' });
   }
 });
+require('dotenv').config();
 // ...existing code...
 
 // Registro de usuario
 router.post('/register', async (req, res) => {
   try {
-    const { first_name, last_name, email, age, password } = req.body;
+    const { first_name, last_name, email, age, password, role } = req.body;
     if (!first_name || !last_name || !email || !age || !password) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ error: 'El email ya está registrado' });
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ first_name, last_name, email, age, password: hashedPassword });
+    const user = new User({ first_name, last_name, email, age, password: hashedPassword, role: role || 'user' });
     await user.save();
     // Emitir JWT en cookie tras registro
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, 'tu_clave_secreta', { expiresIn: '1h' });
+      const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.cookie('jwt', token, {
       httpOnly: true,
       maxAge: 60 * 60 * 1000 // 1 hora
@@ -71,7 +72,7 @@ router.post('/login', async (req, res) => {
   if (!user || !bcrypt.compareSync(password, user.password)) {
     return res.status(401).json({ error: 'Credenciales inválidas' });
   }
-  const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, 'tu_clave_secreta', { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
   res.cookie('jwt', token, {
     httpOnly: true,
     maxAge: 60 * 60 * 1000 // 1 hora

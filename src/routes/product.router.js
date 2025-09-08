@@ -43,32 +43,38 @@ const authorizeRole = require('../middleware/authorization');
 const ProductRepository = require('../repositories/ProductRepository');
 
 router.post('/', passport.authenticate('jwt', { session: false }), authorizeRole('admin'), async (req, res, next) => {
+    console.log('Petición recibida en /api/products');
     try {
-        const { title, description, code, price, stock, category, thumbnails, status } = req.body;
-        if (!title || !description || !code || price == null || stock == null || !category) {
-            return res.status(400).json({ error: 'Faltan campos obligatorios para crear el producto.' });
+        let productos = Array.isArray(req.body) ? req.body : [req.body];
+        let creados = [];
+        for (const prod of productos) {
+            const { title, description, code, price, stock, category, thumbnails, status } = prod;
+            if (!title || !description || !code || price == null || stock == null || !category) {
+                return res.status(400).json({ error: 'Faltan campos obligatorios en uno de los productos.' });
+            }
+            if (typeof price !== 'number' || typeof stock !== 'number' || price < 0 || stock < 0) {
+                return res.status(400).json({ error: 'Price y stock deben ser números válidos y no negativos.' });
+            }
+            const productData = {
+                title,
+                description,
+                code,
+                price,
+                stock,
+                category,
+                thumbnails: thumbnails || [],
+                status: status ?? true
+            };
+            const newProduct = await ProductRepository.create(productData);
+            creados.push(newProduct);
         }
-        if (typeof price !== 'number' || typeof stock !== 'number' || price < 0 || stock < 0) {
-            return res.status(400).json({ error: 'Price y stock deben ser números válidos y no negativos.' });
-        }
-        const productData = {
-            title,
-            description,
-            code,
-            price,
-            stock,
-            category,
-            thumbnails: thumbnails || [],
-            status: status ?? true
-        };
-        const newProduct = await ProductRepository.create(productData);
         // 🚀 Emitir actualización vía Socket.io a todos los clientes
         const io = req.app.get('io');
         if (io) {
             const updatedProducts = await ProductRepository.getAll();
             io.emit('products', updatedProducts);
         }
-        res.status(201).json({ status: 'success', message: 'Producto creado correctamente.', payload: newProduct });
+        res.status(201).json({ status: 'success', message: 'Productos creados correctamente.', payload: creados });
     } catch (error) {
         next(error);
     }

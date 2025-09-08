@@ -1,4 +1,5 @@
 const passport = require('passport');
+require('dotenv').config();
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const User = require('../models/User');
 
@@ -24,15 +25,36 @@ passport.use('local', new LocalStrategy({
 // Estrategia JWT usando cookie y clave desde .env
 passport.use(new JwtStrategy({
   jwtFromRequest: ExtractJwt.fromExtractors([
-    (req) => req && req.cookies ? req.cookies['jwt'] : null
+    (req) => {
+      // Prioridad: Authorization header Bearer token
+      if (req && req.headers && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        if (authHeader.startsWith('Bearer ')) {
+          console.log('JWT extraído del header Authorization:', authHeader.replace('Bearer ', ''));
+          return authHeader.replace('Bearer ', '');
+        }
+      }
+      if (req && req.cookies && req.cookies['jwt']) {
+        console.log('JWT extraído de la cookie:', req.cookies['jwt']);
+        return req.cookies['jwt'];
+      }
+      console.log('No se encontró JWT en header ni cookie');
+      return null;
+    }
   ]),
   secretOrKey: process.env.JWT_SECRET
 }, async (jwt_payload, done) => {
   try {
+    console.log('Payload JWT recibido:', jwt_payload);
     const user = await User.findById(jwt_payload.id);
-    if (user) return done(null, user);
+    if (user) {
+      console.log('Usuario autenticado:', user.email, 'Rol:', user.role);
+      return done(null, user);
+    }
+    console.log('Usuario no encontrado con el id:', jwt_payload.id);
     return done(null, false);
   } catch (err) {
+    console.log('Error en la estrategia JWT:', err);
     return done(err, false);
   }
 }));
